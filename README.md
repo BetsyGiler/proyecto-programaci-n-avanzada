@@ -5,8 +5,20 @@
 3. Giler Cedeño Betsy Olinda (Frontend)  
 4. Zambrano Zambrano Jesús Javier (Móvil)  
 
+
+Para ejecutar el proyecto deben usar lo siguientes comandos:  
+1. ```npm i```: Esto instalará los paquetes necesarios  
+2. ```node server/server.js```: Esto levanta un servidor local
+
 ## Tecnologías en backend  
 **Lenguaje principal:** Node.js  
 **DBMS:** MongoDB
+
+## Paquetes de terceros  
+1. JWT  
+2. Express  
+3. Bcrypt  
+4. Body Parser  
+5. Mongoose  
 
 ## Sistema educativo  
