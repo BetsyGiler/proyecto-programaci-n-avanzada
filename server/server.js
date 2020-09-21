@@ -17,7 +17,9 @@ const db_port = process.env.DB_PORT || 27017;
 const db_host = process.env.DB_HOST || "localhost";
 const db_name = process.env.DB_NAME || "test";
 
-mongoose.connect(`mongodb://${db_host}:${db_port}/${db_name}`, {
+let connection = process.env.DB_PRO_HOST || `mongodb://${db_host}:${db_port}/${db_name}`;
+
+mongoose.connect(connection, {
     useNewUrlParser: true,
     useCreateIndex: true,
     useUnifiedTopology: true

@@ -30,7 +30,11 @@ app.get('/user/login', (req, res)=>{
         if(bcrypt.compareSync(password, responseDB.password)){
 
             let token = jwt.sign(
-                { user: responseDB },
+                { user: {
+                    role: responseDB.role,
+                    id: responseDB._id,
+                    born: responseDB.born
+                }},
                 secretOrPrivateKey=process.env.TOKEN_KEY, 
                 { expiresIn: process.env.TOKEN_EXPIRATION },
             );
@@ -47,6 +51,50 @@ app.get('/user/login', (req, res)=>{
 
     });
 });
+
+app.get('/user/professors', [verifyToken, verifyAdminRole], (req, res)=>{
+
+    const from = req.query.from || 0;
+    const limit = req.query.limit || 0;
+
+    User.find({role: /PROFESSOR/i})
+    .skip(parseInt(from))
+    .limit(parseInt(limit))
+    .exec((error, resDB)=>{
+        if(error){
+            return db_error(error, res);
+        }
+
+        return res.json({
+            success: true,
+            message: `Mostrando registros desde el ${from} hasta el ${from + limit}`,
+            data: resDB
+        });
+    });
+
+}); 
+
+app.get('/user/students', [verifyToken], (req, res)=>{
+
+    const from = req.query.from || 0;
+    const limit = req.query.limit || 0;
+
+    User.find({role: "STUDENT"})
+    .skip(parseInt(from))
+    .limit(parseInt(limit))
+    .exec((error, resDB)=>{
+        if(error){
+            return db_error(error, res);
+        }
+
+        return res.json({
+            success: true,
+            message: `Mostrando registros desde el ${from} hasta el ${from + limit}`,
+            data: resDB
+        });
+    });
+
+}); 
 
 app.post('/user/signup', [verifyToken, verifyAdminRole],(req, res)=>{
 
@@ -77,5 +125,6 @@ app.post('/user/signup', [verifyToken, verifyAdminRole],(req, res)=>{
     });
 
 });
+
 
 module.exports = app;

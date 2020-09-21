@@ -15,7 +15,7 @@ const parallelsSchema = new Schema({
         type: String,
         required: [true, "Ingrese el nivel en el que se imparte la materia"]
     },
-    course: {
+    course_id: {
         type: Schema.Types.ObjectId,
         ref: 'Course',
         required: [true, "El paralelo debe pertenecer a un curso"]

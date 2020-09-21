@@ -49,7 +49,7 @@ app.post('/courses', [verifyToken, verifyAdminRole], (req, res)=>{
     course.save((error, responseDB)=>{
 
         if(error) {
-            return db_error();
+            return db_error(error, res);
         }
 
         return res.json({

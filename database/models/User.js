@@ -46,7 +46,7 @@ const user = new Schema({
         required: [true, 'Ingrese una contraseña'],
         validate: [(pass)=>{pass>=6}, 'Su contraseña debe tener 6 caracteres como mínimo']
     },
-    courses: [{
+    parallels: [{
         type: Schema.Types.Map,
         required: false
     }]
