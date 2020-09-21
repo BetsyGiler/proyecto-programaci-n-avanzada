@@ -32,7 +32,9 @@ const verifyAdminRole = (req, res, next)=>{
 
     let user = req.user;
 
-    if(user.role !== 'ADMIN'){
+    console.log(user.role);
+
+    if(user.role !== 'ADMIN' && user.role !== 'ADMIN_PROFESSOR'){
         return res.status(401).json({
             success: false,
             message: "Usted no tiene autorización para realizar esta operación"
