@@ -11,7 +11,7 @@ const {not_found: user_not_found} = require('../errors/user_error');
 
 const User = require('../../database/models/User');
 
-app.get('/user/login', (req, res)=>{
+app.post('/user/login', (req, res)=>{
 
     const body = req.body;
     
