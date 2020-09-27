@@ -1,5 +1,5 @@
 
-const not_found = (response, message="user not found")=>{
+const not_found = (response, message="Usuario no encontrado")=>{
     return response.status(404).json({
         success: false,
         error: {

@@ -7,6 +7,7 @@ const User = require('../../database/models/User');
 const {verifyToken, verifyAdminRole} = require('../middlewares/verify');
 
 const {db_error} = require('../errors/db_error');
+const {not_found: user_nf} = require('../errors/user_error');
 
 app.get('/courses/:id/parallels', verifyToken, (req, res)=>{
 
@@ -135,4 +136,82 @@ app.post('/courses/:id/parallels', [verifyToken, verifyAdminRole], (req, res)=>{
     });
 });
 
+app.post('/courses/student', [verifyToken, verifyAdminRole], (req, res)=>{
+
+    const idParallel = req.body.id_parallel;
+
+    // Aqui estara el id del estudiante
+    const body = req.body;
+
+    // Verificando que el alumno exista
+    console.log(body);
+    User.findOne({_id: body.id_student, role:'STUDENT'}, (error, userDB)=>{
+
+        if(error) {
+            return db_error(error, res);
+        }
+        if(!userDB){
+            return user_nf(res, "Alumno no encontrado");
+        }
+
+        // Verificando que el paralelo exista
+        Parallels.findById(idParallel, (error, parallelDB)=>{
+
+            if(error) { 
+                return db_error(error, res);
+            }
+            if(!parallelDB){
+                return res.status(404).json({
+                    success: false,
+                    error: {
+                        message: "El paralelo no ha sido encontrado",
+                        possible_fix: "Verifique el id del paralelo y del curso"
+                    }
+                });
+            }
+            
+
+             // preparando los datos a actualizar
+            let student_list = parallelDB.students; 
+            
+            student_list.push({
+                _id: userDB._id,
+                name: userDB.name,
+                last_name: userDB.last_name,
+                identification: userDB.identification
+            });
+
+            // Actualizando paralelo
+            Parallels.findByIdAndUpdate(idParallel, {students: student_list}, (error, parallelsDB)=>{
+                if(error) {
+                    return db_error(error, res);
+                }
+
+                // actualizando alumno
+                let parallelsList = userDB.parallels;
+
+                parallelsList.push({
+                    _id: parallelsDB._id,
+                    level: parallelsDB.level,
+                    letter: parallelsDB.letter,
+                    periodo: parallelsDB.periodo,
+                    course_id: parallelsDB.course_id
+                });
+
+                userDB.update({parallels: parallelsList}, (error, studentDB)=>{
+                    if(error) {
+                        return db_error(error, res);
+                    }
+
+                    return res.json({
+                        success: true,
+                        message: "El alumno ha sido agregado correctamente",
+                        parallel: parallelsDB
+                    });
+                });
+            });
+        });
+    });
+
+});
 module.exports = app;
