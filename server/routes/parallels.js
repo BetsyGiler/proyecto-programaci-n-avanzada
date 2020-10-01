@@ -203,15 +203,35 @@ app.post('/courses/student', [verifyToken, verifyAdminRole], (req, res)=>{
                         return db_error(error, res);
                     }
 
+                    updateCourse(parallelsDB.course_id, {
+                        _id: parallelsDB._id,
+                        level: parallelsDB.level,
+                        letter: parallelsDB.letter,
+                        periodo: parallelsDB.periodo,
+                    });
+
                     return res.json({
                         success: true,
                         message: "El alumno ha sido agregado correctamente",
                         parallel: parallelsDB
                     });
+
                 });
             });
         });
     });
 
 });
+
+
+const updateCourse = (id, new_parallel)=>{
+
+    Courses.findById(id, (err, res)=>{
+        let parallels = res.parallels;
+        parallels.push(new_parallel);
+
+        Courses.findOneAndUpdate({_id:id}, {parallels: parallels});
+    });
+}
+
 module.exports = app;

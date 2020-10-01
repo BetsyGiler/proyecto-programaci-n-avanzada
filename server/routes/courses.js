@@ -1,7 +1,7 @@
 const express = require("express");
-
 // Middlewres
 const {verifyToken, verifyAdminRole} = require("../middlewares/verify");
+const {verifyDeleteOperation} = require("../middlewares/courses_permission");
 
 // Errores
 const {db_error} = require("../errors/db_error");
@@ -59,6 +59,54 @@ app.post('/courses', [verifyToken, verifyAdminRole], (req, res)=>{
         });
     });
 
+});
+
+app.put('/courses/:id', [verifyToken, verifyAdminRole], (req, res)=>{
+
+    const body = req.body;
+    const id = req.params.id;
+
+    // De momento solo puede actualizar el nombre
+    Course.findByIdAndUpdate(id, {name: body.name}, {useFindAndModify:false},(error, responseDB)=>{
+
+        if(error) {
+            return db_error(error, res);
+        }
+
+        if(!responseDB){
+            return res.status(404).json({
+                success: false,
+                error: {
+                    message: "El curso no existe",
+                    possible_fix: "Asegurese de que el id es correcto"
+                }
+            });
+        }
+
+        return res.json({
+            success: true,
+            message: "El curso ha sido actualizado"
+        });
+
+    });
+
+});
+
+app.delete('/courses/:id', [verifyToken, verifyAdminRole, verifyDeleteOperation], (req, res)=>{
+
+    const id = req.params.id;
+
+    Course.findOneAndRemove({_id:id}, (error, responseDB)=>{
+
+        if(error) {
+            return db_error(error, res);
+        }
+
+        return res.json({
+            success: true,
+            message: "El curso ha sido eliminado"
+        });
+    });
 });
 
 module.exports = app;
