@@ -3,8 +3,12 @@ const express = require("express");
 const {verifyToken, verifyAdminRole} = require("../middlewares/verify");
 const {verifyDeleteOperation} = require("../middlewares/courses_permission");
 
+const {DatabaseError} = require("../errors/database_errors");
+const { CourseNotFound } = require("../errors/courses_errors");
+
 // Errores
-const {db_error} = require("../errors/db_error");
+const errorHandler = new DatabaseError();
+errorHandler.setNextHandler(new CourseNotFound());
 
 // Esquemas
 const Course = require('../../database/models/Courses');
@@ -24,7 +28,7 @@ app.get('/courses', verifyToken, (req, res)=>{
     .exec((error, responseDB)=>{
 
       if(error) {
-          return db_error(error, res);
+          return  res.status(400).json(errorHandler.handle("db_error"));
       }
 
       return res.json({
@@ -49,7 +53,7 @@ app.post('/courses', [verifyToken, verifyAdminRole], (req, res)=>{
     course.save((error, responseDB)=>{
 
         if(error) {
-            return db_error(error, res);
+            return  res.status(400).json(errorHandler.handle("db_error"));
         }
 
         return res.json({
@@ -70,17 +74,11 @@ app.put('/courses/:id', [verifyToken, verifyAdminRole], (req, res)=>{
     Course.findByIdAndUpdate(id, {name: body.name}, {useFindAndModify:false},(error, responseDB)=>{
 
         if(error) {
-            return db_error(error, res);
+            return  res.status(400).json(errorHandler.handle("db_error"));
         }
 
         if(!responseDB){
-            return res.status(404).json({
-                success: false,
-                error: {
-                    message: "El curso no existe",
-                    possible_fix: "Asegurese de que el id es correcto"
-                }
-            });
+            return res.status(404).json(errorHandler.handle("course_404"));
         }
 
         return res.json({
@@ -99,7 +97,7 @@ app.delete('/courses/:id', [verifyToken, verifyAdminRole, verifyDeleteOperation]
     Course.findOneAndRemove({_id:id}, (error, responseDB)=>{
 
         if(error) {
-            return db_error(error, res);
+            return  res.status(400).json(errorHandler.handle("db_error"));
         }
 
         return res.json({

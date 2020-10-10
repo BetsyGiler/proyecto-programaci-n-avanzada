@@ -1,5 +1,12 @@
 const Course = require("../../database/models/Courses");
-const {db_error} = require("../errors/db_error");
+const { CourseDeleteError, CourseNotFound } = require("../errors/courses_errors");
+const {DatabaseError} = require("../errors/database_errors");
+
+let courseError = new CourseDeleteError();
+
+courseError.setNextHandler(new CourseNotFound())
+           .setNextHandler(new DatabaseError());
+
 
 const verifyDeleteOperation = (req, res, next)=>{
 
@@ -8,26 +15,14 @@ const verifyDeleteOperation = (req, res, next)=>{
     Course.findOne({_id: id}, (error, response)=>{
 
         if(error) {
-            return db_error(error, res);
+            return res.status(500).json(courseError.handle("db_error"));
         }
         if(!response) {
-            return res.status(404).json({
-                success: false,
-                error: {
-                    message: "Curso no encontrado",
-                    possible_fix: "Verifique el ID"
-                }
-            });
+            return res.status(404).json(courseError.handle("course_404",));
         }
 
         if(response.parallels.length > 0){
-            return res.status(409).json({
-                success: false,
-                error: {
-                    message: "No se puede eliminar el curso debido a que tiene paralelos",
-                    possible_fix: "Elimine los paralelos primero"
-                }
-            });
+            return res.status(400).json(courseError.handle("course_delete_error"));
         }
 
         next();

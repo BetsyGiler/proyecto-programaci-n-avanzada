@@ -5,9 +5,19 @@ const Courses = require('../../database/models/Courses');
 const User = require('../../database/models/User');
 
 const {verifyToken, verifyAdminRole} = require('../middlewares/verify');
+const { DatabaseError } = require('../errors/database_errors');
+const { CourseNotFound } = require('../errors/courses_errors');
+const { UserNotFound } = require('../errors/user_errors');
+const { Unauthorized, UsertNotCompatible } = require('../errors/credential_errors');
+const { ParallelNotFound } = require('../errors/parallels_error');
 
-const {db_error} = require('../errors/db_error');
-const {not_found: user_nf} = require('../errors/user_error');
+let errorHandler = new DatabaseError();
+
+errorHandler.setNextHandler(new CourseNotFound())
+            .setNextHandler(new UserNotFound())
+            .setNextHandler(new Unauthorized())
+            .setNextHandler(new UsertNotCompatible())
+            .setNextHandler(new ParallelNotFound());
 
 app.get('/courses/:id/parallels', verifyToken, (req, res)=>{
 
@@ -23,7 +33,7 @@ app.get('/courses/:id/parallels', verifyToken, (req, res)=>{
     .exec((error, responseDB)=>{
 
         if(error) {
-            return db_error(error, res);
+            return res.status(500).json(errorHandler.handle("db_error"));
         }
 
         return res.json({
@@ -42,16 +52,10 @@ app.post('/courses/:id/parallels', [verifyToken, verifyAdminRole], (req, res)=>{
     // Buscar el curso a agregar
     Courses.findById(id, (error, responseDB)=>{
         if(error) {
-            return db_error(error, res);
+            return res.status(500).json(errorHandler.handle("db_error"));
         }
         if(!responseDB){
-            return res.status(404).json({
-                success: false,
-                error: {
-                    message: "El curso no existe",
-                    fix: "Verifique que el ID del curso sea correcto"
-                }
-            });
+            return res.status(404).json(errorHandler.handle("course_404"));
         }
 
         // Buscando el docente a agregar
@@ -59,16 +63,10 @@ app.post('/courses/:id/parallels', [verifyToken, verifyAdminRole], (req, res)=>{
 
 
             if(error){
-                return db_error(error, res);
+                return res.status(500).json(errorHandler.handle("db_error"));
             }
             if(!responseUser){
-                return res.status(404).json({
-                    success: false,
-                    error:{
-                        message: "El profesor no existe",
-                        fix: "Verifique que el ID del docente sea correcto"
-                    }
-                })
+                return res.status(404).json(errorHandler.handle("user_404"));
             }
 
             // verigicando si es un Docente
@@ -76,13 +74,7 @@ app.post('/courses/:id/parallels', [verifyToken, verifyAdminRole], (req, res)=>{
             const roles = allowedRoles.filter((value)=>value === responseUser.role);
 
             if(roles.length < 1){
-                return res.status(401).json({
-                    success: false,
-                    error: {
-                        message: "El usuario que está intentando asignar no es un docente",
-                        fix: "Asegúrese de que el rol del usuario sea PROFESSOR o ADMIN_PROFESSOR"
-                    }
-                });
+                return res.status(401).json(errorHandler.handle("user_incompatible"));
             }
 
             // Construyendo el profesor del curso
@@ -106,7 +98,7 @@ app.post('/courses/:id/parallels', [verifyToken, verifyAdminRole], (req, res)=>{
             parallels.save((error, parallelsDB)=>{
 
                 if(error){
-                    return db_error(error, res);
+                    return res.status(500).json(errorHandler.handle("db_error"));
                 }
 
                 // Actualizando el documento del docente
@@ -123,7 +115,7 @@ app.post('/courses/:id/parallels', [verifyToken, verifyAdminRole], (req, res)=>{
                 responseUser.updateOne({parallels: parallelsList}, (error, responseUP)=>{
                     console.log(parallelsList);
                     console.log(responseUP);
-                    if(error) return db_error(error, res);
+                    if(error) return res.status(500).json(errorHandler.handle("db_error"));
 
                     return res.json({
                         success: true,
@@ -148,26 +140,20 @@ app.post('/courses/student', [verifyToken, verifyAdminRole], (req, res)=>{
     User.findOne({_id: body.id_student, role:'STUDENT'}, (error, userDB)=>{
 
         if(error) {
-            return db_error(error, res);
+            return res.status(500).json(errorHandler.handle("db_error"));
         }
         if(!userDB){
-            return user_nf(res, "Alumno no encontrado");
+            return res.status(404).json(errorHandler.handle("user_404"));
         }
 
         // Verificando que el paralelo exista
         Parallels.findById(idParallel, (error, parallelDB)=>{
 
             if(error) { 
-                return db_error(error, res);
+                return res.status(500).json(errorHandler.handle("db_error"));
             }
             if(!parallelDB){
-                return res.status(404).json({
-                    success: false,
-                    error: {
-                        message: "El paralelo no ha sido encontrado",
-                        possible_fix: "Verifique el id del paralelo y del curso"
-                    }
-                });
+                return res.status(404).json(errorHandler.handle("parallel_404"));
             }
             
 
@@ -184,7 +170,7 @@ app.post('/courses/student', [verifyToken, verifyAdminRole], (req, res)=>{
             // Actualizando paralelo
             Parallels.findByIdAndUpdate(idParallel, {students: student_list}, (error, parallelsDB)=>{
                 if(error) {
-                    return db_error(error, res);
+                    return res.status(500).json(errorHandler.handle("db_error"));
                 }
 
                 // actualizando alumno
@@ -200,7 +186,7 @@ app.post('/courses/student', [verifyToken, verifyAdminRole], (req, res)=>{
 
                 userDB.update({parallels: parallelsList}, (error, studentDB)=>{
                     if(error) {
-                        return db_error(error, res);
+                        return res.status(500).json(errorHandler.handle("db_error"));
                     }
 
                     updateCourse(parallelsDB.course_id, {

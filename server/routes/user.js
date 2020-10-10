@@ -6,10 +6,16 @@ const jwt = require('jsonwebtoken');
 const app = express();
 
 const {verifyAdminRole, verifyToken} = require('../middlewares/verify');
-const {db_error} = require('../errors/db_error');
-const {not_found: user_not_found} = require('../errors/user_error');
 
 const User = require('../../database/models/User');
+const { DatabaseError } = require('../errors/database_errors');
+const { UserNotFound } = require('../errors/user_errors');
+const { InvalidCredentials } = require('../errors/credential_errors');
+
+let errorHandler = new DatabaseError();
+
+errorHandler.setNextHandler(new UserNotFound())
+            .setNextHandler(new InvalidCredentials())
 
 app.post('/user/login', (req, res)=>{
 
@@ -21,10 +27,10 @@ app.post('/user/login', (req, res)=>{
     User.findOne({email}, (error, responseDB)=>{
 
         if(error){
-            return db_error(error, res);
+            return res.status(500).json(errorHandler.handle("db_error"));
         }
         if(!responseDB){
-            return user_not_found(res, "Correo o contraseña no validos");
+            return res.status(404).json(errorHandler.handle("invalid_credentials"));
         }
 
         if(bcrypt.compareSync(password, responseDB.password)){
@@ -47,7 +53,7 @@ app.post('/user/login', (req, res)=>{
             });
         }
 
-        return user_not_found(res, "Correo o contraseña no validos");
+        return res.status(404).json(errorHandler.handle("invalid_credentials"));
 
     });
 });
@@ -62,7 +68,7 @@ app.get('/user/professors', [verifyToken, verifyAdminRole], (req, res)=>{
     .limit(parseInt(limit))
     .exec((error, resDB)=>{
         if(error){
-            return db_error(error, res);
+            return res.status(500).json(errorHandler("db_error"));
         }
 
         return res.json({
@@ -84,7 +90,7 @@ app.get('/user/students', [verifyToken], (req, res)=>{
     .limit(parseInt(limit))
     .exec((error, resDB)=>{
         if(error){
-            return db_error(error, res);
+            return res.status(500).json(errorHandler("db_error"));
         }
 
         return res.json({
@@ -114,7 +120,7 @@ app.post('/user/signup', [verifyToken, verifyAdminRole],(req, res)=>{
     user.save((error, responseDB)=>{
 
         if(error){
-            return db_error(error, res);
+            return res.status(500).json(errorHandler("db_error"));
         }
 
         return res.json({
