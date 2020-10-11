@@ -11,6 +11,7 @@ const { CourseNotFound } = require('../errors/courses_errors');
 const { UserNotFound } = require('../errors/user_errors');
 const { Unauthorized, UsertNotCompatible } = require('../errors/credential_errors');
 const { ParallelNotFound } = require('../errors/parallels_error');
+const { updateDependencies } = require('../helpers/update_parallels_dependencies');
 
 let errorHandler = new DatabaseError();
 
@@ -242,7 +243,8 @@ app.put('/parallels/:id', [verifyToken, verifyAdminRole], (req, res)=>{
             return res.status(400).json(errorHandler.handle("parallel_404"));
         }
 
-        updateDependencies(response.students, response.professor, response.course, response).then(console.log);
+        // Actualizacion para mantener la consistencia de los datos
+        updateDependencies(response).then(console.log);
 
         return res.json({
             success: true,
@@ -251,64 +253,6 @@ app.put('/parallels/:id', [verifyToken, verifyAdminRole], (req, res)=>{
         });
     });
 
-
-    let  updateDependencies = async (students, professors, course_id, params)=>{
-
-        for(let i=0; i<students.length; ++i){
-
-            let user = await User.findById(students[i].get("_id")); 
-            
-            if(!user) continue;
-
-            let parallels = user.parallels.filter((parallel)=>{
-                return parallel.get("_id") != params._id+"";
-            });
-
-            parallels.push({
-                _id: params._id,
-                level: params.level,
-                periodo: params.periodo,
-                course_id: params.course_id,
-                letter: params.letter
-            });
-                
-            await User.findByIdAndUpdate(students[i].get("_id"), {parallels: parallels});
-        }
-
-        // actualizando docentes
-        let user = await User.findById(professors.get("_id"));
-
-        let parallels = user.parallels.filter((parallel)=>{
-            return parallel.get("_id") != params._id+"";
-        });
-
-        parallels.push({
-            _id: id,
-            level: params.level,
-            periodo: params.periodo,
-            course_id: params.course_id,
-            letter: params.letter
-        });
-            
-        await User.findByIdAndUpdate(professors.get("_id"), {parallels: parallels});
-
-        let course = await Courses.findById(params.course_id);
-
-        if(!course) return "Error en actualización de dependencias";
-
-        parallels = course.parallels.filter(parallel=> {
-            return parallel.get("parallel_id") != params._id+"";
-        });
-
-        parallels.push({
-            parallel_id: params._id,
-            letter: params.letter
-        });
-
-        await Courses.findByIdAndUpdate(params.course_id, {parallels});
-
-        return "Dependencias actualizadas"
-    }
 
 });
 
@@ -324,7 +268,7 @@ app.delete('/parallels/:id/student', [verifyToken, verifyAdminRole], (req, res)=
         }
 
         const students = response.students.filter((student)=>{
-            return student._id !== studentId;
+            return student.get("_id") != studentId + "";
         });
 
         if(students.length === response.students.length){
@@ -339,8 +283,12 @@ app.delete('/parallels/:id/student', [verifyToken, verifyAdminRole], (req, res)=
             });
         });
 
-    });
+        User.findById(studentId).then(usr=>{
+            let parallels = usr.parallels.filter(par=>par.get("_id") != id + "");
+            User.findByIdAndUpdate(studentId, {parallels}).then(console.log);
+        });
 
+    });
 });
 
 
