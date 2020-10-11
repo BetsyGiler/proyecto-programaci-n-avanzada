@@ -21,4 +21,11 @@ Para ejecutar el proyecto deben usar lo siguientes comandos:
 4. Body Parser  
 5. Mongoose  
 
-## Sistema educativo  
+## Sistema educativo 
+
+
+//
+1. Filtrar paralelos por ID
+2. Filtrar cursos por ID
+3. Actualizar paralelo
+4. Eliminar alumno de un paralelo

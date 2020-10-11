@@ -291,6 +291,25 @@ app.delete('/parallels/:id/student', [verifyToken, verifyAdminRole], (req, res)=
     });
 });
 
+app.delete('/parallels/:id', [verifyToken, verifyAdminRole], (req, res)=>{
+
+    const id = req.params.id;
+
+    Parallels.findByIdAndRemove(id, (error, responseDB)=>{
+        if(error){
+            return res.status(404).json(errorHandler.handle("parallel_404"));
+        }
+
+        updateDependencies(responseDB, update=false).then(console.log);
+
+        return res.json({
+            success: false,
+            message: "El curso ha sido eliminado",
+            data: responseDB
+        });
+    });
+
+});
 
 const updateCourse = (id, new_parallel)=>{
 
