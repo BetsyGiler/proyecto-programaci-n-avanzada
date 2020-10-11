@@ -44,7 +44,8 @@ const user = new Schema({
     password: {
         type: String,
         required: [true, 'Ingrese una contraseña'],
-        validate: [(pass)=>{pass>=6}, 'Su contraseña debe tener 6 caracteres como mínimo']
+        validate: [(pass)=>{pass>=6}, 'Su contraseña debe tener 6 caracteres como mínimo'],
+        select: false
     },
     parallels: [{
         type: Schema.Types.Map,
@@ -52,20 +53,5 @@ const user = new Schema({
     }]
 
 });
-
-// Estimado desarrolador, por lo que mas quiera en su vida, no toque esto si no sabe
-// lo que esta haciendo, es peligroso; la parte de function(){} parece indefenza ya
-// que uno podria pensar que con ()=>{} basta, pero no, esta cosa es rebelde, muy 
-// rebelder, asi que, por lo que mas quiera, no lo cambie, ni siquiera lo piense.
-// Que tenga una linda maniana/tarde/noche.
-user.methods.toJSON = function(){
-
-    let usr = this;
-    let userObj = usr.toObject();
-    delete userObj.password;
-
-    return userObj;
-}
-
 
 module.exports = mongoose.model('User', user);

@@ -12,7 +12,7 @@ class CourseDeleteError extends ErrorHandler{
                 }
             }
         }
-        return this.nextHandler.handle(task, error);
+        return this.nextHandler.handle(task);
     }
 
 }
@@ -29,7 +29,7 @@ class CourseNotFound extends ErrorHandler{
                 }
             }
         }
-        return this.nextHandler.handle(task, error);
+        return this.nextHandler.handle(task);
     }
 }
 

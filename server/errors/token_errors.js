@@ -6,7 +6,9 @@ class MissingToken extends ErrorHandler{
             return {
                 success: false,
                 message: "El token debe ser provisto",
-                error
+                error: {
+                    message: "Asegúrese de enviar el token en el header 'Authorization'"
+                }
             }
         }
         return this.nextHandler.handle(task);
@@ -19,7 +21,9 @@ class InvalidToken extends ErrorHandler{
             return {
                 success: false,
                 message: "Su token es invalido",
-                error
+                error: {
+                    message: "Vuelva a iniciar sesión"
+                }
             }
         }
         return this.nextHandler.handle(token);

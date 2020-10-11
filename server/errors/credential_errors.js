@@ -41,6 +41,7 @@ class UsertNotCompatible extends ErrorHandler {
                 }
             }
         }
+        return this.nextHandler.handle(task);
     }
 }
 

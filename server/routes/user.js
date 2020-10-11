@@ -120,7 +120,9 @@ app.post('/user/signup', [verifyToken, verifyAdminRole],(req, res)=>{
     user.save((error, responseDB)=>{
 
         if(error){
-            return res.status(500).json(errorHandler("db_error"));
+            let errorRes = errorHandler.handle("db_error");
+            errorRes.error = error;
+            return res.status(400).json(errorRes);
         }
 
         return res.json({

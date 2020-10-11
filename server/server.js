@@ -27,10 +27,11 @@ if(!connection){
     connection = process.env.DB_PRO_HOST || `mongodb://${db_host}:${db_port}/${db_name}`;
 }
 
-mongoose.connect(connection, {
-    useNewUrlParser: true,
-    useCreateIndex: true,
-    useUnifiedTopology: true
+mongoose.connect(connection, {    
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  useFindAndModify: false,
+  useCreateIndex: true
 }, (err) => {
     if (err) throw err;
     console.log("base de datos ONLINE");

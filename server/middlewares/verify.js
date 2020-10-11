@@ -31,8 +31,6 @@ const verifyAdminRole = (req, res, next)=>{
 
     let user = req.user;
 
-    console.log(user.role);
-
     if(user.role !== 'ADMIN' && user.role !== 'ADMIN_PROFESSOR'){
         return res.status(401).json(errorHandler.handle("unauthorized"));
     }

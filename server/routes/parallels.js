@@ -4,6 +4,7 @@ const Parallels = require('../../database/models/Parallels');
 const Courses = require('../../database/models/Courses');
 const User = require('../../database/models/User');
 
+
 const {verifyToken, verifyAdminRole} = require('../middlewares/verify');
 const { DatabaseError } = require('../errors/database_errors');
 const { CourseNotFound } = require('../errors/courses_errors');
@@ -57,10 +58,10 @@ app.post('/courses/:id/parallels', [verifyToken, verifyAdminRole], (req, res)=>{
         if(!responseDB){
             return res.status(404).json(errorHandler.handle("course_404"));
         }
-
+        
         // Buscando el docente a agregar
         User.findById(body.professor_id, (error, responseUser)=>{
-
+            
 
             if(error){
                 return res.status(500).json(errorHandler.handle("db_error"));
@@ -104,24 +105,25 @@ app.post('/courses/:id/parallels', [verifyToken, verifyAdminRole], (req, res)=>{
                 // Actualizando el documento del docente
                 let parallelsList = responseUser.parallels;
                 parallelsList.push({
-                    _id: parallelsDB._id,
-                    level: parallelsDB.level,
+                    course_id: id,
+                    parallel_id: parallelsDB._id,
                     letter: parallelsDB.letter,
-                    periodo: parallelsDB.periodo,
-                    course_id: parallels.course,
-                    course_name: responseDB.name
                 });
 
-                responseUser.updateOne({parallels: parallelsList}, (error, responseUP)=>{
-                    console.log(parallelsList);
-                    console.log(responseUP);
-                    if(error) return res.status(500).json(errorHandler.handle("db_error"));
+                let courseParallels = responseDB.parallels;
 
-                    return res.json({
-                        success: true,
-                        message: "paralelo agregado correctamente",
-                        parallel: parallelsDB
-                    });
+                courseParallels.push({
+                    parallel_id: parallelsDB._id,
+                    letter: parallelsDB.letter,
+                });
+
+                Courses.findByIdAndUpdate(id, {parallels: courseParallels}, {useFindAndModify:false}).then(console.log);
+                User.findByIdAndUpdate(responseUser._id, {parallels: parallelsList}).then(console.log);
+
+                return res.json({
+                    success: true,
+                    message: "paralelo agregado correctamente",
+                    parallel: parallelsDB
                 });
             });
         });
@@ -136,7 +138,6 @@ app.post('/courses/student', [verifyToken, verifyAdminRole], (req, res)=>{
     const body = req.body;
 
     // Verificando que el alumno exista
-    console.log(body);
     User.findOne({_id: body.id_student, role:'STUDENT'}, (error, userDB)=>{
 
         if(error) {
@@ -205,6 +206,139 @@ app.post('/courses/student', [verifyToken, verifyAdminRole], (req, res)=>{
                 });
             });
         });
+    });
+
+});
+
+app.get('/parallels', [verifyToken, verifyAdminRole], (req, res)=>{
+
+    const paralallelId = req.query.parallel_id || "s";
+
+    Parallels.findById(paralallelId, (error, responseDB)=>{
+        if(error){
+            return res.status(404).json(errorHandler.handle("parallel_404"));
+        }
+
+        return res.json({
+            success: true,
+            inscritos: responseDB.students? responseDB.students.length:0,
+            data: responseDB
+        });
+    });
+
+});
+
+app.put('/parallels/:id', [verifyToken, verifyAdminRole], (req, res)=>{
+
+    const body = req.body;
+    const id = req.params.id;
+
+    delete body._id;
+    delete body.professor;
+    delete body.students;
+
+    Parallels.findByIdAndUpdate(id, body, {new: true, useFindAndModify: false}, (error, response)=>{
+        if(error){
+            return res.status(400).json(errorHandler.handle("parallel_404"));
+        }
+
+        updateDependencies(response.students, response.professor, response.course, response).then(console.log);
+
+        return res.json({
+            success: true,
+            message: "El paralelo ha sido acualizado",
+            data: response
+        });
+    });
+
+
+    let  updateDependencies = async (students, professors, course_id, params)=>{
+
+        for(let i=0; i<students.length; ++i){
+
+            let user = await User.findById(students[i].get("_id")); 
+            
+            if(!user) continue;
+
+            let parallels = user.parallels.filter((parallel)=>{
+                return parallel.get("_id") != params._id+"";
+            });
+
+            parallels.push({
+                _id: params._id,
+                level: params.level,
+                periodo: params.periodo,
+                course_id: params.course_id,
+                letter: params.letter
+            });
+                
+            await User.findByIdAndUpdate(students[i].get("_id"), {parallels: parallels});
+        }
+
+        // actualizando docentes
+        let user = await User.findById(professors.get("_id"));
+
+        let parallels = user.parallels.filter((parallel)=>{
+            return parallel.get("_id") != params._id+"";
+        });
+
+        parallels.push({
+            _id: id,
+            level: params.level,
+            periodo: params.periodo,
+            course_id: params.course_id,
+            letter: params.letter
+        });
+            
+        await User.findByIdAndUpdate(professors.get("_id"), {parallels: parallels});
+
+        let course = await Courses.findById(params.course_id);
+
+        if(!course) return "Error en actualización de dependencias";
+
+        parallels = course.parallels.filter(parallel=> {
+            return parallel.get("parallel_id") != params._id+"";
+        });
+
+        parallels.push({
+            parallel_id: params._id,
+            letter: params.letter
+        });
+
+        await Courses.findByIdAndUpdate(params.course_id, {parallels});
+
+        return "Dependencias actualizadas"
+    }
+
+});
+
+app.delete('/parallels/:id/student', [verifyToken, verifyAdminRole], (req, res)=>{
+
+    const id = req.params.id;
+    const studentId = req.query.student_id;
+
+    Parallels.findById(id, (error, response)=>{
+
+        if(error){
+            return res.status(404).json(errorHandler.handle("parallel_404"));
+        }
+
+        const students = response.students.filter((student)=>{
+            return student._id !== studentId;
+        });
+
+        if(students.length === response.students.length){
+            return res.status(404).json(errorHandler.handle("user_404"));
+        }
+
+        Parallels.findByIdAndUpdate(id, {students}, {useFindAndModify: false}).then(doc=>{
+            res.json({
+                success: true,
+                message: "El alumno fue eliminado del paralelo",
+                data: doc
+            });
+        });
+
     });
 
 });

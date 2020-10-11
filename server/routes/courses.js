@@ -12,6 +12,7 @@ errorHandler.setNextHandler(new CourseNotFound());
 
 // Esquemas
 const Course = require('../../database/models/Courses');
+const Courses = require("../../database/models/Courses");
 
 // App de express
 const app = express();
@@ -30,7 +31,7 @@ app.get('/courses', verifyToken, (req, res)=>{
       if(error) {
           return  res.status(400).json(errorHandler.handle("db_error"));
       }
-
+      
       return res.json({
           success: true,
           message: `Mostrando registros desde el ${from} hasta el ${from + limit - 1}`,
@@ -105,6 +106,25 @@ app.delete('/courses/:id', [verifyToken, verifyAdminRole, verifyDeleteOperation]
             message: "El curso ha sido eliminado"
         });
     });
+});
+
+app.get('/courses/:id', [verifyToken], (req, res)=>{
+
+    const id = req.params.id;
+
+    Courses.findById(id, (error, response)=>{
+
+        if(error){
+            return res.status(404).json(errorHandler.handle("course_404"));
+        }
+
+        return res.json({
+            success: true,
+            data: response
+        });
+
+    });
+
 });
 
 module.exports = app;
