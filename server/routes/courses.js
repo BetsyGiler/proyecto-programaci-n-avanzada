@@ -1,5 +1,21 @@
+/**
+ * Carta a los desarrolladores del futuro: 
+ * 
+ * Este archivo es sencillo, puede ser editado
+ * las veces que lo desee. Adelante campeon! 
+ * Dale con todo.
+ * 
+ * Nota: En caso de que haya tenido que maldecir
+ * cosas imaginarias, dejeme decirle que es un
+ * inutil, pero por si las moscas, deje a continuacion
+ * las veces que lo hizo, para que otro desarrollador
+ * se burle de usted.
+ * 
+ * conteo de veces que maldijo sin sentido: 0
+ */
+
 const express = require("express");
-// Middlewres
+// Middlewares
 const {verifyToken, verifyAdminRole} = require("../middlewares/verify");
 const {verifyDeleteOperation} = require("../middlewares/courses_permission");
 
@@ -17,6 +33,7 @@ const Courses = require("../../database/models/Courses");
 // App de express
 const app = express();
 
+// Lectura
 app.get('/courses', verifyToken, (req, res)=>{
 
     const from = req.query.from  || 0;
@@ -42,6 +59,7 @@ app.get('/courses', verifyToken, (req, res)=>{
 
 });
 
+// Insersion
 app.post('/courses', [verifyToken, verifyAdminRole], (req, res)=>{
 
     const body = req.body;
@@ -66,10 +84,13 @@ app.post('/courses', [verifyToken, verifyAdminRole], (req, res)=>{
 
 });
 
+// Actualizacion
 app.put('/courses/:id', [verifyToken, verifyAdminRole], (req, res)=>{
 
     const body = req.body;
     const id = req.params.id;
+
+    delete body._id; // El id esta prohibido, mi estimad@.
 
     // De momento solo puede actualizar el nombre
     Course.findByIdAndUpdate(id, {name: body.name}, {useFindAndModify:false},(error, responseDB)=>{
@@ -91,6 +112,7 @@ app.put('/courses/:id', [verifyToken, verifyAdminRole], (req, res)=>{
 
 });
 
+// Eliminacion
 app.delete('/courses/:id', [verifyToken, verifyAdminRole, verifyDeleteOperation], (req, res)=>{
 
     const id = req.params.id;
@@ -108,6 +130,7 @@ app.delete('/courses/:id', [verifyToken, verifyAdminRole, verifyDeleteOperation]
     });
 });
 
+// Lectura por ID
 app.get('/courses/:id', [verifyToken], (req, res)=>{
 
     const id = req.params.id;

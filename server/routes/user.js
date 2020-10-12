@@ -15,16 +15,17 @@ const { InvalidCredentials } = require('../errors/credential_errors');
 let errorHandler = new DatabaseError();
 
 errorHandler.setNextHandler(new UserNotFound())
-            .setNextHandler(new InvalidCredentials())
+            .setNextHandler(new InvalidCredentials());
 
+// Login
 app.post('/user/login', (req, res)=>{
 
     const body = req.body;
     
     let email = body.email;
-    let password = body.password;
+    let password = body.password || "";
 
-    User.findOne({email}, (error, responseDB)=>{
+    User.findOne({email}).select('+password').exec((error, responseDB)=>{
 
         if(error){
             return res.status(500).json(errorHandler.handle("db_error"));
@@ -58,6 +59,7 @@ app.post('/user/login', (req, res)=>{
     });
 });
 
+// Lectura de docentes
 app.get('/user/professors', [verifyToken, verifyAdminRole], (req, res)=>{
 
     const from = req.query.from || 0;
@@ -80,6 +82,7 @@ app.get('/user/professors', [verifyToken, verifyAdminRole], (req, res)=>{
 
 }); 
 
+// Lectura de esclavos
 app.get('/user/students', [verifyToken], (req, res)=>{
 
     const from = req.query.from || 0;
@@ -102,6 +105,7 @@ app.get('/user/students', [verifyToken], (req, res)=>{
 
 }); 
 
+// Registro de una pobre alma indefenza que sera masacrada
 app.post('/user/signup', [verifyToken, verifyAdminRole],(req, res)=>{
 
     let body = req.body;
@@ -134,5 +138,24 @@ app.post('/user/signup', [verifyToken, verifyAdminRole],(req, res)=>{
 
 });
 
+// Actualizacion de usuario
+app.put('/user/:id', [verifyToken, verifyAdminRole], (req, res)=>{
+
+    const id = req.params.id;
+    const body = req.body;
+
+    delete body._id; // you can't modify it
+    delete body.parallels; // esto se edita desde el paralelo
+
+    User.findByIdAndUpdate(id, body, (error, userDB)=>{
+        if(error || !userDB) {
+            return res.status(404).json(errorHandler.handle("user_404"));
+        }
+
+
+
+    });
+
+});
 
 module.exports = app;

@@ -1,3 +1,21 @@
+/**
+ * Estimado desarrollador, este archivo ya esta completo,
+ * contiene fragmentos muy delicados, asi que, por lo que
+ * mas quiera, si no sabe lo que va a hacer no modifique
+ * esto, evitelo, haga de cuenta que este archivo es 
+ * invisible, que no tiene ni una sola linea escrita.
+ * 
+ * En caso de que se tome el valor de modificarlo, por
+ * favor, deje a continuacion el numero de veces que
+ * maldijo cosas inexistentes, para que asi pueda salvar
+ * alguna alma indefenza que se tome la atrevida tarea
+ * de modificar esto de nuevo.
+ * 
+ * Veces que maldijo algo despues de una modificacion: 0
+ * (Si ya hasta perdio la cuenta, ponga un valor aproximado)
+ */
+
+
 const app = require('express')();
 
 const Parallels = require('../../database/models/Parallels');
@@ -5,7 +23,7 @@ const Courses = require('../../database/models/Courses');
 const User = require('../../database/models/User');
 
 
-const {verifyToken, verifyAdminRole} = require('../middlewares/verify');
+const { verifyToken, verifyAdminRole } = require('../middlewares/verify');
 const { DatabaseError } = require('../errors/database_errors');
 const { CourseNotFound } = require('../errors/courses_errors');
 const { UserNotFound } = require('../errors/user_errors');
@@ -235,7 +253,6 @@ app.put('/parallels/:id', [verifyToken, verifyAdminRole], (req, res)=>{
     const id = req.params.id;
 
     delete body._id;
-    delete body.professor;
     delete body.students;
 
     Parallels.findByIdAndUpdate(id, body, {new: true, useFindAndModify: false}, (error, response)=>{
@@ -287,7 +304,7 @@ app.delete('/parallels/:id/student', [verifyToken, verifyAdminRole], (req, res)=
             let parallels = usr.parallels.filter(par=>par.get("_id") != id + "");
             User.findByIdAndUpdate(studentId, {parallels}).then(console.log);
         });
-
+        
     });
 });
 
@@ -303,7 +320,7 @@ app.delete('/parallels/:id', [verifyToken, verifyAdminRole], (req, res)=>{
         updateDependencies(responseDB, update=false).then(console.log);
 
         return res.json({
-            success: false,
+            success: true,
             message: "El curso ha sido eliminado",
             data: responseDB
         });

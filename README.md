@@ -29,3 +29,5 @@ Para ejecutar el proyecto deben usar lo siguientes comandos:
 2. Filtrar cursos por ID
 3. Actualizar paralelo
 4. Eliminar alumno de un paralelo
+5. Eliminar paralelo
+6. Eliminar curso
