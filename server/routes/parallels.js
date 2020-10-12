@@ -328,6 +328,20 @@ app.delete('/parallels/:id', [verifyToken, verifyAdminRole], (req, res)=>{
 
 });
 
+app.get('/parallels/:id', [verifyToken], (req, res)=>{
+    
+    Parallels.findById(req.params.id, (error, parallelDB)=>{
+        if(error){
+            return res.status(404).json(errorHandler.handle("parallel_404"));
+        }
+
+        return res.json({
+            success: true,
+            data: parallelDB
+        });
+    });
+})
+
 const updateCourse = (id, new_parallel)=>{
 
     Courses.findById(id, (err, res)=>{
